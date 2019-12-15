@@ -1,21 +1,22 @@
 import React, { Component } from 'react'
 import JCards from "./JobsCards"
-import Fade from 'react-reveal/Fade';
 import TransitionGroup from 'react-transition-group/TransitionGroup';
 import Autosuggest from 'react-autosuggest';
-import { Col, Row, Form, Container } from 'react-bootstrap';
+import Fade from 'react-reveal/Fade';
+
+import { Col, Row, Form, Container, Button } from 'react-bootstrap';
 import { Slider, Rail, Handles, Tracks, Ticks } from "react-compound-slider";
 import { SliderRail, Handle, Track, Tick } from "./SliderComponent";
-
-
 
 export default class JobsList extends Component {
 
     constructor(props) {
         super(props);
         this.state = {
-            jobBudgets:[],
-            jobSkill:[],
+            showColContent: null,
+            showCol: false,
+            jobBudgets: [],
+            jobSkill: [],
             domain: [],
             jobs: [{
                 title: "job 1",
@@ -82,10 +83,7 @@ export default class JobsList extends Component {
         var technologies = []
         this.state.jobFilter.forEach(item => {
             item.technologies.map(tech => {
-                if (!technologies.includes(tech)) 
-                {technologies.push(tech) }
-
-
+                if (!technologies.includes(tech)) { technologies.push(tech) }
             })
         })
 
@@ -103,23 +101,24 @@ export default class JobsList extends Component {
     }
 
     //auto suggestion + filtering functions
-    onChangeInput = (event, { newValue }) => {
-        this.setState({
-            value: newValue, todo: newValue
-        });
+    onChangeInput = (event, { newValue }) => { this.setState({ value: newValue, todo: newValue }); };
+
+    onSuggestionsFetchRequested = ({ value }) => { this.setState({ suggestions: this.getSuggestions(value) }); };
+
+    onSuggestionsClearRequested = () => { this.setState({ suggestions: [] }); };
+
+    getSuggestions = value => {
+        const inputValue = value.trim().toLowerCase();
+        const inputLength = inputValue.length;
+
+        return inputLength === 0 ? [] : this.state.tech.filter(tech => tech.toLowerCase().slice(0, inputLength) === inputValue
+        );
     };
 
-    onSuggestionsFetchRequested = ({ value }) => {
-        this.setState({
-            suggestions: this.getSuggestions(value)
-        });
-    };
+    getSuggestionValue = suggestion => suggestion;
 
-    onSuggestionsClearRequested = () => {
-        this.setState({
-            suggestions: []
-        });
-    };
+    renderSuggestion = suggestion => (<div>{suggestion}</div>);
+
     add = async (event) => {
         event.preventDefault();
         await this.setState({
@@ -142,13 +141,12 @@ export default class JobsList extends Component {
             })
         })
 
-        if(this.state.jobBudgets.length >0){
-            if(this.state.jobBudgets!==this.state.jobs)
-            filteredJobs=filteredJobs.filter(value => this.state.jobBudgets.includes(value))
+        if (this.state.jobBudgets.length > 0) {
+            if (this.state.jobBudgets !== this.state.jobs)
+                filteredJobs = filteredJobs.filter(value => this.state.jobBudgets.includes(value))
         }
-        this.setState({ jobFilter: filteredJobs,jobSkill:filteredJobs })
+        this.setState({ jobFilter: filteredJobs, jobSkill: filteredJobs })
     }
-
 
     remove = async (event) => {
         await this.setState({
@@ -156,7 +154,6 @@ export default class JobsList extends Component {
                 item.id !== +event.currentTarget.getAttribute('data-id')
             )
         });
-
 
         if (this.state.todos.length > 0) {
             var filteredJobs = []
@@ -173,27 +170,7 @@ export default class JobsList extends Component {
         } else {
             this.setState({ jobFilter: this.state.jobs })
         }
-
-
-
     }
-
-    getSuggestions = value => {
-        const inputValue = value.trim().toLowerCase();
-        const inputLength = inputValue.length;
-
-        return inputLength === 0 ? [] : this.state.tech.filter(tech => tech.toLowerCase().slice(0, inputLength) === inputValue
-        );
-    };
-
-    getSuggestionValue = suggestion => suggestion;
-
-    renderSuggestion = suggestion => (
-        <div>
-            {suggestion}
-        </div>
-    );
-
 
 
     //slider range functions
@@ -218,18 +195,23 @@ export default class JobsList extends Component {
 
     onChange = (val) => {
         this.setState({ sliderHandlesVal: val })
-
         var temp = this.state.jobs.filter(item => {
             if (val[0] <= item.price && item.price <= val[1]) {
                 return item
             }
         })
 
-        if(this.state.jobSkill.length >0){
-            temp=temp.filter(value => this.state.jobSkill.includes(value))
+        if (this.state.jobSkill.length > 0) {
+            temp = temp.filter(value => this.state.jobSkill.includes(value))
         }
 
-        this.setState({ jobFilter: temp,jobBudgets:temp })
+        this.setState({ jobFilter: temp, jobBudgets: temp })
+    }
+
+    ///show the details column
+    showDetails = (item) => {
+        var showColContent = <p>{item.title}</p>
+        this.setState({ showColContent, showCol: true })
     }
 
     render() {
@@ -243,29 +225,17 @@ export default class JobsList extends Component {
             onChange: this.onChangeInput
         };
 
-        const checkBoxes = []
-
-        this.state.tech.forEach(item => {
-            checkBoxes.push(
-                <Form.Check label={item} id={item} />
-                //    <input type="checkbox" label={item}/>
-            )
-        })
-
-
         return (
             <Container>
                 <Row>
-
-                    <Col md={4} style={{ backgroundColor: 'pink' }} >
-                        <h2>Filter</h2>
+                    {/* Filter column */}
+                    <Col md={3} style={{ backgroundColor: 'pink' }} >
                         <br />
                         <h4>Budget</h4>
 
-
+                        {/* Slider code */}
                         {this.state.sliderHandlesVal.length !== 0 &&
                             this.state.domain !== 0 &&
-
                             <Slider
                                 mode={2}
                                 step={1}
@@ -276,8 +246,7 @@ export default class JobsList extends Component {
                                 }}
                                 onUpdate={this.onUpdate}
                                 onChange={this.onChange}
-                                values={this.state.sliderHandlesVal}
-                            >
+                                values={this.state.sliderHandlesVal}>
                                 <Rail>
                                     {({ getRailProps }) => <SliderRail getRailProps={getRailProps} />}
                                 </Rail>
@@ -322,21 +291,13 @@ export default class JobsList extends Component {
                         <br />
                         <br />
 
-                        <br />
-
-
-
-
-
+                        {/* auto suggetion and animated filter cards code */}
                         <h4>Skills</h4>
-                        {/* {checkBoxes} */}
                         {this.state.tech.length > 0 &&
                             <form onSubmit={this.add} autoComplete="off">
                                 <div className="col-12 mb-2">
                                     <TransitionGroup>
                                         {this.state.todos.map((item) =>
-                                            // The next line is what controls
-                                            // animated transitions
                                             <Fade key={item.id} collapse bottom>
                                                 <div className="card">
                                                     <div className="card-body justify-content-between">
@@ -346,8 +307,8 @@ export default class JobsList extends Component {
                                                             onClick={this.remove}
                                                             type="button"
                                                             className="close"
-                                                            aria-label="Close"
-                                                        >
+                                                            aria-label="Close">
+                                                                
                                                             <span aria-hidden="true">&times;</span>
                                                         </button>
                                                     </div>
@@ -356,10 +317,7 @@ export default class JobsList extends Component {
                                         )}
                                     </TransitionGroup>
                                 </div>
-
-                                {/* <div className="col-10"> */}
                                 <Row>
-                                    {/* <div className="input-group mt-4 mb-1"> */}
                                     <Autosuggest
                                         style={{ background: "red" }}
                                         type="text"
@@ -370,47 +328,39 @@ export default class JobsList extends Component {
                                         onSuggestionsClearRequested={this.onSuggestionsClearRequested}
                                         getSuggestionValue={this.getSuggestionValue}
                                         renderSuggestion={this.renderSuggestion}
-                                        inputProps={inputProps}
-                                    />
+                                        inputProps={inputProps} />
 
-                                    {/* <input
-                  type="text"
-                  className="form-control"
-                  id='todoField'
-                  placeholder='Todo item'
-                  name='todo'
-                  value={this.state.todo}
-                  onChange={this.handleChange}
-                /> */}
-                                    {/* </div> */}
                                     <div className="input-group-append buttonThing">
                                         <button
                                             onClick={this.add}
                                             className="btn btn-outline-success"
                                             type="button">
-                                            Add Item
-                             </button>
-
+                                            Add Item</button>
                                     </div>
                                 </Row>
-                                {/* </div> */}
                             </form>}
-
-
-
-
-
-
-
-
                     </Col>
-                    <Col md={8} >
+
+
+                    {/* Cards column */}
+                    <Col md={this.state.showCol ? 5 : 7} >
                         {this.state.jobFilter.map(item => {
-                            return <JCards data={item} />
+                            return <JCards data={item} showDetails={this.showDetails} />
                         })}
                     </Col>
-                </Row>
 
+
+                    {/* detail column */}
+                    {this.state.showCol !== false && this.state.showColContent !== null &&
+                        <Col md={3} style={{ background: "yellow" }}>
+                            <Fade left>
+                                <div >
+                                    {this.state.showColContent}
+                                    <Button variant="primary">Apply</Button>
+                                </div>
+                            </Fade>
+                        </Col>}
+                </Row>
             </Container>
         )
     }
